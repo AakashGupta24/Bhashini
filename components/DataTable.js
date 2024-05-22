@@ -36,6 +36,7 @@ const DataTable = ({ columns, data }) => {
     const [sorting, setSorting] = useState([])
     const [columnFilters, setColumnFilters] = useState([])
     const [columnVisibility, setColumnVisibility] = useState({})
+    const [rowSelection, setRowSelection] = useState({})
     const table = useReactTable({
         data,
         columns,
@@ -46,10 +47,12 @@ const DataTable = ({ columns, data }) => {
         onColumnFiltersChange: setColumnFilters,
         getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
+        onRowSelectionChange: setRowSelection,
         state: {
             sorting,
             columnFilters,
             columnVisibility,
+            rowSelection,
         },
     })
     return (

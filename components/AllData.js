@@ -14,12 +14,6 @@ const AllData = ({ type ,user }) => {
           throw new Error('Failed to fetch data');
         }
         const jsonData = await response.json();
-        if (type === 'res-tock'){
-
-          let updatedInventory = jsonData.inventory.filter(item => item.quantity < 10);
-  
-          jsonData.inventory = updatedInventory;
-        }
 
         setData(jsonData.inventory);
       } catch (error) {
@@ -29,7 +23,6 @@ const AllData = ({ type ,user }) => {
 
     fetchData();
 
-    // Setup polling to fetch data at regular intervals
     const intervalId = setInterval(fetchData, 60000); // Fetch data every minute (adjust as needed)
 
     // Cleanup function to clear the interval when the component unmounts

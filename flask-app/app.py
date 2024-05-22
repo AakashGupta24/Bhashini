@@ -1,6 +1,6 @@
 # app.py
 
-from flask import Flask, render_template, request, redirect, url_for,jsonify
+from flask import Flask, render_template, request, redirect, url_for,jsonify,make_response
 from flask_cors import CORS
 import subprocess
 import sqlite3
@@ -19,6 +19,7 @@ import certifi
 from bson.objectid import ObjectId
 from test import add_inventory
 from delete import delete_inventory
+from notification import trigger_notifications_manually
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'GMfo_IV0iSTCX2AMNliveWXWV05NXRny4jhEmKRHy8A'
 CORS(app, origins=['http://localhost:3000']) 
@@ -122,6 +123,12 @@ def delete_python():
 
 
 
+@app.route('/mobilemessage/<id>', methods=['GET'])
+def mobilemessage(id):
+    print("mobile message")
+    trigger_notifications_manually(id)
+    return jsonify({"message":"Notification send successfully"}),200
+
 @app.route('/login', methods=['POST'])
 def login():
     email = request.form['email']
@@ -142,8 +149,22 @@ def get_user(user_id):
     user = users_collection.find_one({'_id': ObjectId(user_id)}, {'password': 0})  # Exclude password from the response
     if user:
         user['_id'] = str(user['_id'])
-        return jsonify(user)
+        response = make_response(jsonify(user))
+        response.set_cookie('user_id', user_id)
+        return response
+        
     return jsonify({'message': 'User not found'}), 404
+
+@app.route('/getmastertable', methods=['GET'])
+def getmastertable():
+    collection = db['MasterTable']
+    inventory_data = list(collection.find())
+
+    # Convert ObjectId to string in each document
+    for item in inventory_data:
+        item['_id'] = str(item['_id'])
+
+    return jsonify(inventory_data)
 
 
 @app.route('/signup', methods=['POST'])
@@ -204,22 +225,6 @@ def signin():
     else:
         return jsonify({'message': 'Invalid credentials'}), 401
 
-
-@app.route('/Inventorytrack')
-def Inventorytrack():
-    conn = sqlite3.connect('inventory.db')
-    c = conn.cursor()
-    
-    # Query the database to retrieve inventory data
-    c.execute("SELECT * FROM inventory")
-    inventory_data = c.fetchall()
-    
-    # Close the database connection
-    conn.close()
-    
-    # Render the HTML template with inventory data
-    return render_template('inventorytrack.html', inventory=inventory_data)
-   
 
 
 # @app.route('/start_streamlit', methods=['GET'])
