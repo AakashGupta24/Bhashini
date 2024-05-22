@@ -6,10 +6,11 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import pymongo
+import os
 import certifi
 # Initialize Twilio client
-account_sid = 'ACb8fa6601b413af33fd481b4fd7b47de0'  # Your Twilio Account SID
-auth_token = '0649994450bbff7a7b58160d715fe39e'   # Your Twilio Auth Token
+account_sid = os.getenv('TWILIO_ACCOUNT_SID') # Your Twilio Account SID
+auth_token = os.getenv('AUTH_TOKEN')  # Your Twilio Auth Token
 client = Client(account_sid, auth_token)
 
 # Function to fetch data from the database
