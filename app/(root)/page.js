@@ -16,6 +16,7 @@ const Home = () => {
             const userInfo = await getUserInfo();
             setLoggedIn(userInfo);
             setLoading(false);
+            localStorage.setItem("ID",userInfo._id)
         };
 
         fetchUserData();

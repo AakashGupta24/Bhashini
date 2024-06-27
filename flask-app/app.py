@@ -6,6 +6,10 @@ import subprocess
 import sqlite3
 import pyaudio
 import wave
+from inference_sdk import InferenceHTTPClient
+import os
+import tempfile
+import pandas as pd
 import threading
 from subprocess import Popen
 from pymongo import MongoClient
@@ -20,9 +24,16 @@ from bson.objectid import ObjectId
 from test import add_inventory
 from delete import delete_inventory
 from notification import trigger_notifications_manually
+import json
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'GMfo_IV0iSTCX2AMNliveWXWV05NXRny4jhEmKRHy8A'
 CORS(app, origins=['http://localhost:3000']) 
+
+CLIENT = InferenceHTTPClient(
+    api_url="https://detect.roboflow.com",
+    api_key="sSJT2IiCCbjL5cMmg5ET"  # Replace with your actual API key
+)
+
 
 # Set parameters for audio recording
 FORMAT = pyaudio.paInt16  # Audio format (16-bit PCM)
@@ -143,6 +154,51 @@ def login():
     return jsonify(user)
 
 
+@app.route('/image', methods=['POST'])
+def upload_image():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
+    if file:
+        # Save the uploaded file to a temporary location
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            file_path = temp_file.name
+            file.save(file_path)
+        
+        try:
+            # Run inference on the uploaded image
+            inference_result = CLIENT.infer(
+                file_path,
+                model_id="indian-market/22"
+            )
+
+            # Extract class names and count their occurrences
+            class_counts = {}
+            for prediction in inference_result['predictions']:
+                class_name = prediction.get('class')
+                if class_name:
+                    if class_name in class_counts:
+                        class_counts[class_name] += 1
+                    else:
+                        class_counts[class_name] = 1
+
+            # Convert the result to JSON format
+            class_counts_json = json.dumps(class_counts, indent=4)
+
+            # Return the result as JSON
+            return jsonify(class_counts_json), 200
+
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+        finally:
+            # Clean up the temporary file
+            if os.path.exists(file_path):
+                os.remove(file_path)
 
 @app.route('/user/<user_id>', methods=['GET'])
 def get_user(user_id):
@@ -167,6 +223,103 @@ def getmastertable():
     return jsonify(inventory_data)
 
 
+@app.route('/add-product', methods=['POST'])
+def add_product():
+    inventory_collection = db['inventory']
+    products_collection = db['products']
+    data = request.get_json()
+    product_name = data.get('productName')
+    quantity = data.get('quantity')
+    price = data.get('price')
+    user_id = data.get('ID')
+    print("jahkan")
+    # Check if the product ID already exists
+    if inventory_collection.find_one({'product_name': product_name}):
+        return jsonify({"message": "Product ID already exists"}), 400
+
+    product_data = {
+        'productName': product_name,
+        'quantity': quantity,
+        'price': price,
+        'ID': user_id
+    }
+
+    # Insert the product data into MongoDB
+    products_collection.insert_one(product_data)
+
+    return jsonify({"message": "Product added successfully"}), 201
+
+
+@app.route('/upload-csv', methods=['POST'])
+def upload_csv():
+    csv_file = request.files['file']
+    user_id = request.form.get('ID')
+    inventory_collection = db['inventory']
+    products_collection = db['products']
+    print(csv_file)
+    if not csv_file:
+        return jsonify({'error': 'No file provided'}), 400
+    
+    try:
+        # Read the CSV file using Pandas
+        df = pd.read_csv(csv_file)
+        
+        # Ensure the CSV has the required columns
+        required_columns = {'productName', 'quantity', 'price'}
+        if not required_columns.issubset(df.columns):
+            return jsonify({'error': f'Missing required columns: {required_columns.difference(df.columns)}'}), 400
+
+        for index, row in df.iterrows():
+            product_name = row['productName']
+            if inventory_collection.find_one({'product_name': product_name}):
+                # Product with the same name already exists, skip adding it
+                continue
+
+            product_data = {
+                'productName': product_name,
+                'quantity': int(row['quantity']),
+                'price': float(row['price']),
+                'ID': user_id
+            }
+            products_collection.insert_one(product_data)
+
+        return jsonify({'message': 'CSV data added successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/start_barcode_scanner', methods=['GET'])
+def start_barcode_scanner():
+    try:
+        # Start the barcode.py script using subprocess
+        subprocess.Popen(['python', 'flask-app\\barcode.py'])
+        return jsonify({'message': 'Barcode scanner started successfully!'}), 200
+    except Exception as e:
+        return jsonify({'message': 'Failed to start barcode scanner', 'error': str(e)}), 500
+
+
+@app.route('/barcode_data', methods=['POST'])
+def receive_barcode_data():
+    global barcode_data
+    data = request.json
+    barcode_data = {
+        'data': data['data'],
+        'type': data['type']
+    }
+    return jsonify({'message': 'Barcode data received'}), 200
+
+barcode_data = {}
+
+@app.route('/get_barcode_data', methods=['GET'])
+def get_barcode_data():
+    global barcode_data
+    return jsonify(barcode_data)
+
+
+#addition in app.py
+
+
+
 @app.route('/signup', methods=['POST'])
 def signup():
     data = request.get_json()
@@ -180,13 +333,18 @@ def signup():
     postalCode = data.get('postalCode')
     shopName = data.get('shopName')
 
+    # Check if the email already exists
+    if users_collection.find_one({'email': email}):
+        return jsonify({"message": "Email already exists"}), 400
+
     # Optionally, hash the password before storing it for security
+    # hashed_password = hash_password(password)
 
     user_data = {
         'name': name,
         'email': email,
         'phone': phone,
-        'password': password,
+        'password': password,  # Use 'hashed_password' if hashing the password
         'address': address,
         'city': city,
         'state': state,
@@ -197,9 +355,7 @@ def signup():
     # Insert the user data into MongoDB
     users_collection.insert_one(user_data)
 
-    return jsonify({"message": "User created successfully"})
-
-
+    return jsonify({"message": "User created successfully"}), 201
 
 @app.route('/signin', methods=['POST'])
 def signin():

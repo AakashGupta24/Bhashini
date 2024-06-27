@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { Payment, columns } from "./Columns";
 import DataTable from "./DataTable";
-import getUserInfo from "@/lib/actions/user.actions";
 const ReStockComponent = ({type,user}) => {
   const [data, setData] = useState([]);
 

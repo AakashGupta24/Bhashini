@@ -10,21 +10,22 @@ const ReStock = () => {
   const [loggedIn, setLoggedIn] = useState(null);
   const [loading, setLoading] = useState(true);
   const [emailSend, setEmailSend] = useState('')
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (!loggedIn) {
-        const userInfo = await getUserInfo();
-        setLoggedIn(userInfo);
-        setLoading(false);
-      }
-    };
-    fetchUserData();
-  }, [loggedIn]);
+  const ID = localStorage.getItem("ID")
+  // useEffect(() => {
+  //   const fetchUserData = async () => {
+  //     if (!loggedIn) {
+  //       const userInfo = await getUserInfo();
+  //       setLoggedIn(userInfo);
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchUserData();
+  // }, [loggedIn]);
 
   const mobileMessage = async () => {
     try {
-      const response = await fetch(`http://127.0.0.1:5000/mobilemessage/${loggedIn._id}`, {
+      
+      const response = await fetch(`http://127.0.0.1:5000/mobilemessage/${ID}`, {
         method: 'GET', // Adjust the method if needed (GET, POST, etc.)
       });
 
@@ -43,9 +44,9 @@ const ReStock = () => {
     }
   };
 
-  if (loading) {
-    return <div>Loading...</div>; // or a loading indicator
-  }
+  // if (loading) {
+  //   return <div>Loading...</div>; // or a loading indicator
+  // }
 
   return (
     <div className="header-box flex flex-col items-start pt-8">
@@ -59,7 +60,7 @@ const ReStock = () => {
         <div className="pl-12 text-blue-500 font-semibold">{emailSend}</div>
       )
     }
-      <ReStockComponent type="re-stock" user={loggedIn._id} />
+      <ReStockComponent type="re-stock" user={ID} />
      
     </div>
   );

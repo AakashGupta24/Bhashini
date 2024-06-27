@@ -39,6 +39,7 @@ const formSchema = z.object({
 const AuthForm = ({ type }) => {
     const [user, setUser] = useState(null)
     const [isLoading, setIsLoading] = useState(false)
+    const [emailExisted, setEmailExisted] = useState("")
     const router = useRouter();
     // console.log(user);
     // 1. Define your form.
@@ -90,6 +91,7 @@ const AuthForm = ({ type }) => {
 
                 if (response.ok) {
                     const result = await response.json();
+                    
                     console.log(result.message);
                     // Redirect to a different page or show a success message
                     router.push('/')
@@ -101,8 +103,9 @@ const AuthForm = ({ type }) => {
         }
         catch (error) {
             console.log(error);
+            console.log("Email already existed");
         } finally {
-
+            setEmailExisted("Email already existed")
             setIsLoading(false)
         }
 
@@ -159,6 +162,11 @@ const AuthForm = ({ type }) => {
                         )}
 
                         <CustomInput control={form.control} name='email' label="Email" placeholder='Enter your email' />
+                            {
+                                <div className="font-semibold text-2xl">
+                                    {emailExisted}
+                                </div>
+                            }
 
                         <CustomInput control={form.control} name='password' label="Password" placeholder='Enter your password' />
 

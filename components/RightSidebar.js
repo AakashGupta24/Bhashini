@@ -92,7 +92,7 @@ useEffect(() => {
       </SheetTrigger>
       <SheetContent className='bg-white'>
         <SheetHeader>
-          <SheetTitle>Notificatins</SheetTitle>
+          <SheetTitle>Notifications</SheetTitle>
         </SheetHeader>
         {
           notifyNumber && (

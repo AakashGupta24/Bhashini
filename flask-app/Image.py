@@ -9,7 +9,7 @@ CLIENT = InferenceHTTPClient(
 
 # Run inference on a local image
 inference_result = CLIENT.infer(
-    "maggi.jpg", 
+    "public\\icons\\final_img_data\\maggi.jpg", 
     model_id="indian-market/22"
 )
 
@@ -31,5 +31,3 @@ class_counts_json = json.dumps(class_counts, indent=4)
 print(class_counts_json)
 
 # Optionally, save the result to a JSON file
-with open('class_counts.json', 'w') as json_file:
-    json_file.write(class_counts_json)

@@ -147,6 +147,9 @@ const DataTable = ({ columns, data }) => {
                         )}
                     </TableBody>
                 </Table>
+                {
+                    localStorage.setItem("MasterTableData",table.getFilteredSelectedRowModel().rows)
+                }
                 <div className="flex items-center justify-end space-x-2 py-4">
                     <Button
                         variant="outline"
